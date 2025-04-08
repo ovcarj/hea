@@ -1,0 +1,27 @@
+[build-system]
+requires = ['setuptools', 'setuptools-scm']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'HEA'
+version = '0.0.1'
+authors = [
+    {name = 'Juraj Ovčar', email = 'juraj.ovcar@gmail.com'},
+]
+description = 'HEA: high-entropy alloys calculations'
+readme = 'README.rst'
+requires-python = '>=3.13'
+keywords = ['hea', 'high', 'entropy', 'alloy', 'calculation', 'simulation']
+license = {text = 'GPL-3.0-only'}
+classifiers = [
+    'Programming Language :: Python :: 3',
+    'License :: OSI Approved :: GNU General Public License version 3',
+]
+dependencies = [
+    'importlib-metadata; python_version>="3.13"',
+    'click',
+    'ase'
+]
+
+[tool.setuptools.dynamic]
+version = {attr = 'hea.__version__'}

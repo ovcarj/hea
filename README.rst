@@ -1,7 +1,7 @@
 hea
 ===========================
 
-High entropy alloy calculations.
+Code related to high entropy alloy simulations.
 
 Installation
 ----------------------------------

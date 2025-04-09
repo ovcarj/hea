@@ -20,7 +20,8 @@ classifiers = [
 dependencies = [
     'importlib-metadata; python_version>="3.13"',
     'click',
-    'ase'
+    'ase',
+    'tomli-w'
 ]
 
 [tool.setuptools.dynamic]

@@ -1,5 +1,7 @@
 """Handles the build.toml configuration file"""
 
+from functools import cached_property
+
 import tomllib
 import tomli_w
 
@@ -9,11 +11,12 @@ import ase.build.bulk
 class BuildConfig:
     """
     Handles the build.toml configuration file
+
     """
 
     def __init__(self, config_filepath=None):
         """
-        If ``config_filepath`` is given, reads it to self._cfg
+        Set the path to the TOML configuration file
 
         Parameters
         ----------
@@ -22,12 +25,40 @@ class BuildConfig:
 
         """
 
-        self.cfg = None
+        self._config_filepath = config_filepath
 
-        if config_filepath:
+    @cached_property
+    def cfg(self):
+        """
+        Read the build configuration file from ``self._config_filepath``
 
-            with open(config_filepath, mode='rb') as f:
-                self.cfg = tomllib.load(f)
+        Since TOML format does not suport NULL values, replace 'None' strings
+            with None
+
+        Returns
+        -------
+        _cfg : None | dict
+            The build configuration read to a dictionary;
+                if self._config_filepath is None, return None
+
+        """
+
+        if not self._config_filepath:
+            return None
+
+        with open(self._config_filepath, mode='rb') as f:
+            cfg = tomllib.load(f)
+
+        #
+        # Replace 'None' strings with None
+        #
+        # For now, iterate each section individually
+        #
+        for key, value in cfg['ASE_BUILD_BULK_ARGUMENTS'].items():
+            if value == 'None':
+                cfg['ASE_BUILD_BULK_ARGUMENTS'][key] = None
+
+        return cfg
 
     @property
     def _defaults(self):

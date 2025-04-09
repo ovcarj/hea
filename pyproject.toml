@@ -24,5 +24,8 @@ dependencies = [
     'tomli-w'
 ]
 
+[project.scripts]
+hea = 'hea.cli:hea_cli'
+
 [tool.setuptools.dynamic]
 version = {attr = 'hea.__version__'}

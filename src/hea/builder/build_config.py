@@ -74,6 +74,10 @@ class BuildConfig:
 
         defaults = {}
 
+        #
+        # Parameters passed to ase.build.bulk
+        #
+
         ase_build_bulk_args = ase.build.bulk.__annotations__.keys()
 
         build_dict = {build_key: 'None'
@@ -85,8 +89,50 @@ class BuildConfig:
 
         build_dict['crystalstructure'] = 'bcc'
         build_dict['a'] = 2.0
+        build_dict['orthorhombic'] = True
 
         defaults.update({'ASE_BUILD_BULK_ARGUMENTS': build_dict})
+
+        #
+        # Batch creation parameters
+        #
+
+        batch_dict = {
+                'rng_seed': 12345,
+                'supercell': (2, 2, 2),
+                'n_structs_per_cell': 50,
+                'scale_cell': False,
+                'min_scaling': 0.9,
+                'max_scaling': 1.1,
+                'scaling_step': 0.1
+                }
+
+        defaults.update({'BATCH_PARAMETERS': batch_dict})
+
+        #
+        # Chemistry
+        #
+
+        chemistry_dict = {
+
+                'W':
+                          {'concentration': 25.0,
+                           'uncertainty': 0.0},
+
+                'Ta':
+                          {'concentration': 25.0,
+                           'uncertainty': 0.0},
+
+                'V':
+                          {'concentration': 25.0,
+                           'uncertainty': 0.0},
+
+                'Cr':
+                          {'concentration': 25.0,
+                           'uncertainty': 0.0}
+                }
+
+        defaults.update({'CHEMISTRY': chemistry_dict})
 
         return defaults
 

@@ -102,9 +102,9 @@ class BuildConfig:
                 'supercell': (2, 2, 2),
                 'n_structs_per_cell': 50,
                 'scale_cell': False,
-                'min_scaling': 0.9,
                 'max_scaling': 1.1,
-                'scaling_step': 0.1
+                'n_scaled': 5,
+                'add_edge_points': 2
                 }
 
         defaults.update({'BATCH_PARAMETERS': batch_dict})

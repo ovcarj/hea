@@ -2,6 +2,8 @@
 
 import os
 
+from copy import deepcopy
+
 import numpy as np
 
 import ase.io
@@ -93,6 +95,67 @@ class Builder: #pylint: disable=too-few-public-methods
                                      chemistry=self._cfg['CHEMISTRY'],
                                      n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
                                      seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
+                            )
+
+        #
+        # If "cell scaling", build n_structs_per_cell structures
+        # for each scaling value in:
+        #
+        # np.linspace(1.0, max_scaling, n_scaled)
+        #
+        # "add_edge_points" structures will be added at below (above)
+        # the maximum scaling values
+        #
+
+        else:
+
+            scaling = np.linspace(start=1.0,
+                                  stop=self._cfg['BATCH_PARAMETERS']['max_scaling'],
+                                  num=self._cfg['BATCH_PARAMETERS']['n_scaled'],
+                                  endpoint=True)
+
+            if self._cfg['BATCH_PARAMETERS']['add_edge_points']:
+
+                step = scaling[1] - scaling[0]
+
+                edge_low = np.arange(
+                        start=scaling[0] -\
+                                step * (self._cfg['BATCH_PARAMETERS']['add_edge_points']),
+                        stop=scaling[0],
+                        step=step
+                        )
+
+                edge_high = np.arange(
+                        start=scaling[-1] + step,
+                        stop=scaling[-1] +\
+                                step * (self._cfg['BATCH_PARAMETERS']['add_edge_points'] + 1),
+                        step=step
+                        )
+
+                scaling = np.concatenate((edge_low, scaling, edge_high))
+
+            original_cell = unit_template.cell
+
+            for scale in scaling:
+
+                scaled_cell = original_cell * scale
+
+                print(f'Building {self._cfg["BATCH_PARAMETERS"]["n_structs_per_cell"]} structures for cell\n\n{scaled_cell}\n\n') #pylint: disable=line-too-long
+
+                unit_copy = deepcopy(unit_template)
+                unit_copy.set_cell(cell=scaled_cell, scale_atoms=True)
+
+                scaled_supercell_template = self._build_supercell_template(
+                        unit_template=unit_copy,
+                        rep=self._cfg['BATCH_PARAMETERS']['supercell']
+                        )
+
+                structures.extend(
+                        self._build_random_batch(
+                            template_structure=scaled_supercell_template,
+                            chemistry=self._cfg['CHEMISTRY'],
+                            n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
+                            seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
                             )
 
         # Write batch .traj file

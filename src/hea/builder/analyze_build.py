@@ -74,8 +74,7 @@ def get_concentrations(traj_filepath):
                 np.mean(chemistry[species]['concentrations_per_struct'])
 
         chemistry[species]['uncertainty'] =\
-                np.std(chemistry[species]['concentrations_per_struct'], ddof=1,
-                       mean=chemistry[species]['concentration'])
+                np.std(chemistry[species]['concentrations_per_struct'], ddof=1)
 
     return chemistry
 

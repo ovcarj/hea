@@ -34,7 +34,7 @@ class Builder: #pylint: disable=too-few-public-methods
 
         self._cfg = BuildConfig(config_filepath=config_filepath).cfg
 
-    def build(self, build_directory=None, prefix='HEA'):
+    def build(self, build_directory=None, prefix='HEA', write_immediately=True):
         """
         Create HEA structures according to ``self._cfg`` in ``build_directory``
 
@@ -47,6 +47,8 @@ class Builder: #pylint: disable=too-few-public-methods
                 if None, defaults to CWD
         prefix : str
             Prefix for the built files; defaults to 'HEA'
+        write_immediately : bool
+            Immediately writes structures as they are created; does not keep structures in memory
 
         """
 
@@ -90,12 +92,22 @@ class Builder: #pylint: disable=too-few-public-methods
         #
 
         if not self._cfg['BATCH_PARAMETERS']['scale_cell']:
-            structures.extend(
+
+            if not write_immediately:
+
+                structures.extend(
                     self._build_random_batch(template_structure=supercell_template,
-                                     chemistry=self._cfg['CHEMISTRY'],
-                                     n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
-                                     seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
-                            )
+                                    chemistry=self._cfg['CHEMISTRY'],
+                                    n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
+                                    seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
+                                    )
+
+            else:
+                self._build_random_batch(template_structure=supercell_template,
+                                chemistry=self._cfg['CHEMISTRY'],
+                                n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
+                                seed=self._cfg['BATCH_PARAMETERS']['rng_seed'],
+                                output_filename=f'{fpath_prefix}.traj')
 
         #
         # If "cell scaling", build n_structs_per_cell structures
@@ -150,19 +162,29 @@ class Builder: #pylint: disable=too-few-public-methods
                         rep=self._cfg['BATCH_PARAMETERS']['supercell']
                         )
 
-                structures.extend(
-                        self._build_random_batch(
-                            template_structure=scaled_supercell_template,
-                            chemistry=self._cfg['CHEMISTRY'],
-                            n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
-                            seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
-                            )
+                if not write_immediately:
+
+                    structures.extend(
+                        self._build_random_batch(template_structure=supercell_template,
+                                        chemistry=self._cfg['CHEMISTRY'],
+                                        n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
+                                        seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
+                                        )
+
+                else:
+                    self._build_random_batch(template_structure=supercell_template,
+                                    chemistry=self._cfg['CHEMISTRY'],
+                                    n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
+                                    seed=self._cfg['BATCH_PARAMETERS']['rng_seed'],
+                                    output_filename=f'{fpath_prefix}.traj')
 
         # Write batch .traj file
 
-        ase.io.write(filename=f'{fpath_prefix}.traj',
-                     images=structures,
-                     format='traj')
+        if not write_immediately:
+
+            ase.io.write(filename=f'{fpath_prefix}.traj',
+                         images=structures,
+                         format='traj')
 
     def _build_unit_template(self, **kwargs):
         """
@@ -230,7 +252,8 @@ class Builder: #pylint: disable=too-few-public-methods
                             template_structure,
                             chemistry,
                             n_structs,
-                            seed=None):
+                            seed=None,
+                            output_filename=None):
         """
         Creates a batch of random HEA structures
 
@@ -270,6 +293,14 @@ class Builder: #pylint: disable=too-few-public-methods
             Number of structures to create
         seed : int
             RNG seed
+        output_filename : str
+            Path to the output ASE .traj file.
+                If not given, a list of ASE Atoms objects will be returned
+
+        Returns
+        -------
+        batch : list of ase.atoms.Atoms
+            Returned only if ouput_filename is None
 
         """
 
@@ -279,21 +310,34 @@ class Builder: #pylint: disable=too-few-public-methods
         cell = template_structure.get_cell()
         natoms = len(template_structure)
 
+        generator = np.random.default_rng(seed=seed)
+
+        rng_integers = generator.integers(low=0, high=1e6, size=n_structs)
+
         for i in range(n_structs):
 
-            generator = np.random.default_rng(seed=seed)
-
-            struct_seed = generator.integers(low=0, high=1e6) + 129 * i
+            struct_seed = rng_integers[i] + 129 * i
 
             random_species = self._get_random_species(
                     chemistry=chemistry, natoms=natoms, seed=struct_seed)
 
-            batch.append(ase.atoms.Atoms(symbols=random_species,
-                                         positions=positions,
-                                         cell=cell,
-                                         pbc=True))
+            atoms = ase.atoms.Atoms(symbols=random_species,
+                                    positions=positions,
+                                    cell=cell,
+                                    pbc=True)
 
-        return batch
+            if not output_filename:
+                batch.append(atoms)
+
+            else:
+
+                with ase.io.trajectory.Trajectory(output_filename, mode='a') as traj:
+                    traj.write(atoms)
+
+        if not output_filename:
+            return batch
+
+        print(f'{n_structs} structures written to {output_filename} !')
 
     def _get_random_species(self, chemistry, natoms, seed=None):
         """

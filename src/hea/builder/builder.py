@@ -165,14 +165,14 @@ class Builder: #pylint: disable=too-few-public-methods
                 if not write_immediately:
 
                     structures.extend(
-                        self._build_random_batch(template_structure=supercell_template,
+                        self._build_random_batch(template_structure=scaled_supercell_template,
                                         chemistry=self._cfg['CHEMISTRY'],
                                         n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
                                         seed=self._cfg['BATCH_PARAMETERS']['rng_seed'])
                                         )
 
                 else:
-                    self._build_random_batch(template_structure=supercell_template,
+                    self._build_random_batch(template_structure=scaled_supercell_template,
                                     chemistry=self._cfg['CHEMISTRY'],
                                     n_structs=self._cfg['BATCH_PARAMETERS']['n_structs_per_cell'],
                                     seed=self._cfg['BATCH_PARAMETERS']['rng_seed'],

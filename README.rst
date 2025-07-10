@@ -10,6 +10,6 @@ The following installation procedure was tested:
 
 .. code:: shell
 
-        conda create -n appeer python=3.13
-        conda activate appeer
+        conda create -n hea python=3.13
+        conda activate hea
         python -m pip install -e .

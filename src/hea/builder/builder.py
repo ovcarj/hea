@@ -7,6 +7,7 @@ from copy import deepcopy
 import numpy as np
 
 import ase.io
+from ase.io import lammpsdata
 import ase.build.bulk
 import ase.atoms
 
@@ -61,28 +62,38 @@ class Builder: #pylint: disable=too-few-public-methods
 
         unit_template = self._build_unit_template(**self._cfg['ASE_BUILD_BULK_ARGUMENTS'])
 
-        # Write unit template structure
-
+#        # Write unit template structure
+#
         fpath_prefix = os.path.join(build_directory, prefix)
-
-        ase.io.write(filename=f'{fpath_prefix}_template_unit.traj',
-                     images=unit_template,
-                     format='traj')
-
-        # Build supercell template structure
-
-        supercell_template = self._build_supercell_template(
-                unit_template=unit_template,
-                rep=self._cfg['BATCH_PARAMETERS']['supercell']
-                )
-
-        # Write supercell template structure
-
-        ase.io.write(filename=f'{fpath_prefix}_template_supercell.traj',
-                     images=supercell_template,
-                     format='traj')
-
+#
+#        ase.io.write(filename=f'{fpath_prefix}_template_unit.traj',
+#                     images=unit_template,
+#                     format='traj')
+#
+#        # Build supercell template structure
+#
+#        supercell_template = self._build_supercell_template(
+#                unit_template=unit_template,
+#                rep=self._cfg['BATCH_PARAMETERS']['supercell']
+#                )
+#
+#        # Write supercell template structure
+#
+#        ase.io.write(filename=f'{fpath_prefix}_template_supercell.traj',
+#                     images=supercell_template,
+#                     format='traj')
+#
         # Build a batch of structures
+
+        with open('tt.dat', 'r') as f:
+
+            supercell_template = lammpsdata.read_lammps_data(
+                file=f,
+                Z_of_type={1: 6, 2: 6},
+                sort_by_id=False,
+                units='metal',
+                atom_style='atomic'
+                )
 
         structures = []
 
@@ -338,6 +349,8 @@ class Builder: #pylint: disable=too-few-public-methods
             return batch
 
         print(f'{n_structs} structures written to {output_filename} !')
+
+        ase.io.write('test.xyz', atoms)
 
     def _get_random_species(self, chemistry, natoms, seed=None):
         """

@@ -66,6 +66,7 @@ def lat_mismatch( a0_a, brav_a, n_layers_a, \
     B is on top, and we control the amount of vacuum and the interlattice dist.
     The supercell size is computed such to minimize the mismatch:
     a0_a/a0_b ~= h/k where h and k are integers.
+    Works only for cubic brav lattices atm.
     The final conf should look like:
 
           ______________

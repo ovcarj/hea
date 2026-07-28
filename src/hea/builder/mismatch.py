@@ -201,6 +201,14 @@ def lat_mismatch( a0_a, brav_a, n_layers_a, \
                         np.matmul(lat_a, np.array([0.0,0.0,maxz])) + \
                         np.array([0.0, 0.0, interlattice_dist+vacuum]) \
                         ])
+#    lat_tot = np.array([a1_b*h, \
+#                        a2_b*h, \
+#                        a3_a*n_layers_a + a3_b*n_layers_b - \
+#                        np.matmul(lat_a, np.array([0.0,0.0,maxz])) + \
+#                        np.array([0.0, 0.0, interlattice_dist+vacuum]) \
+#                        ])
+#
+
 
     # accumulate positions and atomic types
     pos = np.ndarray([nat_tot,3],dtype=float)
@@ -216,6 +224,9 @@ def lat_mismatch( a0_a, brav_a, n_layers_a, \
                     pos[idx] = np.matmul( lat_a, bas_a[i]+shift)
                     typ[idx] = typ_a[i]
                     idx+=1
+    print("last z value of sys A:",pos[idx-1][2])
+    print("sys A indices:",0,":",idx-1)
+    print("sys B indices:",idx,":", nat_tot)
     for xx in range(h):
         for yy in range(h):
             for zz in range( n_layers_b ):
@@ -231,9 +242,103 @@ def lat_mismatch( a0_a, brav_a, n_layers_a, \
 
 
 
+def random_species(chemistry, natoms, seed=None):
+    """
+    Return a list of random atomic species using the ``chemistry`` dictionary
+
+    Parameters
+    ----------
+    chemistry : dict
+        Dictionary containing atomic species and concentrations
+    natoms : int
+        Desired length of the returned list of atomic species
+    seed : int
+        RNG seed
+
+    Returns
+    -------
+    random_species_list : list
+        List of atomic species
+
+    """
+
+    generator = np.random.default_rng(seed=seed)
+
+    normal_chemistry = [
+
+            {
+                'species': atomic_species,
+                'concentration': generator.normal(
+                    loc=chemistry[atomic_species]['concentration'],
+                    scale=chemistry[atomic_species]['uncertainty'])
+            }
+
+            for atomic_species in chemistry.keys()
+
+                    ]
+
+    ranged_chemistry = []
+
+    total_concentration = 0.0
+
+    for norm_chemistry in normal_chemistry:
+
+        ranged_chemistry.append(
+                {
+                 'species': norm_chemistry['species'],
+                 'range': [total_concentration,
+                           total_concentration + norm_chemistry['concentration']]
+                })
+
+        total_concentration += norm_chemistry['concentration']
+
+    random_numbers = generator.uniform(low=0.0,
+                                       high=total_concentration,
+                                       size=natoms)
+
+    random_species_list = []
+
+    for random_number in random_numbers:
+        for range_chemistry in ranged_chemistry:
+
+            if range_chemistry['range'][0] <= random_number < range_chemistry['range'][1]:
+                random_species_list.append(range_chemistry['species'])
+                break
+
+    return random_species_list
+
+
 # test main func
 if __name__ == "__main__":
-    struc = lat_mismatch( a0_a=3.12, brav_a="bcc", n_layers_a=6, \
-                          a0_b=3.19, brav_b="bcc", n_layers_b=9, \
-                          interlattice_dist=2.0, vacuum=10.0 \
+    struc = lat_mismatch( a0_a=3.19, brav_a="bcc", n_layers_a=9, \
+                          a0_b=3.125, brav_b="bcc", n_layers_b=20, \
+                          interlattice_dist=1.6, vacuum=40.0, \
+                          kmax=100, nmin=2 \
                    )
+
+    chem={
+            "W": {
+                "concentration":28.0,
+                "uncertainty":0.0
+                },
+            "Ta": {
+                "concentration":30.0,
+                "uncertainty":0.0
+                },
+            "V": {
+                "concentration":21.0,
+                "uncertainty":0.0
+                },
+            "Cr": {
+                "concentration":21.0,
+                "uncertainty":0.0
+                }
+            }
+    spec = random_species( chem, len(struc) )
+
+    struc.set_chemical_symbols( spec )
+
+    from ase.io import write
+    write( "tt.lmp", struc, format="lammps-data",
+            atom_style="atomic", 
+            specorder=["Cr", "Ta", "V", "W"] )
